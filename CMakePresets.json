@@ -1,0 +1,50 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+		"major": 3,
+		"minor": 21,
+		"patch": 0
+	},
+    "configurePresets": [
+		{
+            "name": "debug-build-configuration",
+            "displayName": "Debug-Build-Configuration",
+            "description": "Debug build for STM32F103. Uses ARM GNU toolchain.",
+            "binaryDir": "${sourceDir}/build/debug",
+            "toolchainFile": "${sourceDir}/cmake/generic-gnu-stm32f103",
+            "cacheVariables": 
+            {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": true,
+				"CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "release-build-configuration",
+            "displayName": "Release-Build-Configuration",
+            "description": "Release build for STM32F103. Uses ARM GNU toolchain.",
+            "binaryDir": "${sourceDir}/build/release",
+            "toolchainFile": "${sourceDir}/cmake/generic-gnu-stm32f103",
+            "cacheVariables": 
+            {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": true,
+				"CMAKE_BUILD_TYPE": "Release"
+            }
+        }
+    ],
+	"buildPresets": [
+		{
+			"name": "debug-build",
+			"displayName": "Debug-Build",
+			"description": "Debug build for STM32F103. Uses ARM GNU toolchain.",
+			"configurePreset": "debug-build-configuration",
+			"verbose": true
+		},
+		{
+			"name": "release-build",
+			"displayName": "Release-Build",
+			"description": "Release build for STM32F103. Uses ARM GNU toolchain.",
+			"configurePreset": "release-build-configuration",
+			"verbose": true
+		}
+	]
+}
