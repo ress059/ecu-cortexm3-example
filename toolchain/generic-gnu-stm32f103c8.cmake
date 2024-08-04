@@ -1,7 +1,7 @@
 # This toolchain file is for cross compiling with ARM GNU toolchain. Used this resource as a reference:
 # https://cmake.org/cmake/help/book/mastering-cmake/chapter/Cross%20Compiling%20With%20CMake.html
 # Target = STM32F103 (STM32 blue pill).
-# Host = Linux x86 computer. This toolchain file requires a Linux x86 host.
+# Host = Linux x86 machine. This toolchain file requires a Linux x86 host.
 message(STATUS "Using toolchain file for cross compiling STM32F103 on Linux x86 host. Must be "
                "using Linux x86 host with arm-none-eabi toolchain installed in /opt directory.")
 
@@ -46,31 +46,33 @@ if(CMAKE_HOST_LINUX OR CMAKE_HOST_UNIX)
     find_program(SIZE					NAMES arm-none-eabi-size		REQUIRED    ONLY_CMAKE_FIND_ROOT_PATH) # Measure overall code size (sections)
     find_program(STRIP					NAMES arm-none-eabi-strip		REQUIRED    ONLY_CMAKE_FIND_ROOT_PATH) # Discard symbols from .o files
     find_program(GCOV					NAMES arm-none-eabi-gcov		REQUIRED    ONLY_CMAKE_FIND_ROOT_PATH) # Code coverage
-    find_library(STDLIB_C               NAMES libc.a                    REQUIRED    ONLY_CMAKE_FIND_ROOT_PATH)
-    find_library(STDLIB_MATH            NAMES libm.a                    REQUIRED    ONLY_CMAKE_FIND_ROOT_PATH) # Cortex M3 does not have FPU so we must use soft float.
-    find_library(STDLIB_CXX             NAMES libstdc++.a               REQUIRED    ONLY_CMAKE_FIND_ROOT_PATH)
 else()
     message(FATAL_ERROR "Only Linux hosts currently supported.")
 endif()
 
 
-# Hardware-specific compiler flags for STM32F103.
-set(CMAKE_C_FLAGS_INIT )
+# Do not let CMake automatically add some compiler flags based on the build type.
+# For cross compilation and in embedded environments we want full control over these.
+# Override the default flags with empty strings. Let the application decide the optimization
+# levels and if they want debug symbols printed or not.
+set(CMAKE_C_FLAGS_DEBUG "" CACHE STRING "")
+set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG" CACHE STRING "")
+set(CMAKE_C_FLAGS_MINSIZEREL "-DNDEBUG" CACHE STRING "")
+set(CMAKE_C_FLAGS_RELWITHDEBINFO "-DNDEBUG" CACHE STRING "")
+set(CMAKE_CXX_FLAGS_DEBUG "" CACHE STRING "")
+set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG" CACHE STRING "")
+set(CMAKE_CXX_FLAGS_MINSIZEREL "-DNDEBUG" CACHE STRING "")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DNDEBUG" CACHE STRING "")
 
 
-
-# Provide standard libraries to the linker and add standard library include paths
-# so application can use them.
-todo todo 
-
-
-
+# Only set hardware-specific compiler flags for STM32F103 here since this is a toolchain
+# file. Remaining flags will be added by CMake build system depending on what is needed 
+# by the application.
+set(CMAKE_C_FLAGS_INIT "-mcpu=cortex-m3 -mfloat-abi=soft -mthumb" CACHE STRING "")
+set(CMAKE_CXX_FLAGS_INIT "-fno-exceptions -fno-rtti -fno-use-cxa-atexit -mcpu=cortex-m3 -mfloat-abi=soft -mthumb" CACHE STRING "")
 
 
-###########################################################################################################################
-
-# Linker
-# set(CMAKE_EXE_LINKER_FLAGS_INIT		"${CMAKE_EXE_LINKER_FLAGS_INIT} ${LINKER}")		# Linker command when linking to create executables.
-# set(CMAKE_MODULE_LINKER_FLAGS_INIT	"${CMAKE_MODULE_LINKER_FLAGS_INIT} ${LINKER}")	# Linker command when linking to static libraries.
-# set(CMAKE_SHARED_LINKER_FLAGS_INIT	"${CMAKE_SHARED_LINKER_FLAGS_INIT} ${LINKER}")	# Linker command whne linking to dynamic libraries.
-###########################################################################################################################
+# Only set hardware-specific linker flags for STM32F103 here since this is a toolchain
+# file. Remaining flags will be added by CMake build system depending on what is needed 
+# by the application.
+set(CMAKE_EXE_LINKER_FLAGS_INIT "-mcpu=cortex-m3 -mfloat-abi=soft -mthumb -specs=nosys.specs -Wl,-T${CMAKE_CURRENT_LIST_DIR}/stm32f103c8.ld -Wl,-Map=${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}.map -Wl,--gc-sections" CACHE STRING "")

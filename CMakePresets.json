@@ -11,7 +11,7 @@
             "displayName": "Debug-Build-Configuration",
             "description": "Debug build for STM32F103. Uses ARM GNU toolchain.",
             "binaryDir": "${sourceDir}/build/debug",
-            "toolchainFile": "${sourceDir}/cmake/generic-gnu-stm32f103",
+            "toolchainFile": "${sourceDir}/toolchain/generic-gnu-stm32f103c8.cmake",
             "cacheVariables": 
             {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": true,
@@ -23,7 +23,7 @@
             "displayName": "Release-Build-Configuration",
             "description": "Release build for STM32F103. Uses ARM GNU toolchain.",
             "binaryDir": "${sourceDir}/build/release",
-            "toolchainFile": "${sourceDir}/cmake/generic-gnu-stm32f103",
+            "toolchainFile": "${sourceDir}/toolchain/generic-gnu-stm32f103c8.cmake",
             "cacheVariables": 
             {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": true,

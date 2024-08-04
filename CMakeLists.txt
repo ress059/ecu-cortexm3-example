@@ -1,88 +1,88 @@
 cmake_minimum_required(VERSION 3.21)
-project(ECU_EXAMPLE_STM32F103 VERSION 0.1)
-# set(ECU_SUPPORTED_COMPILERS "GNU")
-# option(ECU_DISABLE_RUNTIME_ASSERTS OFF)
+project(ECU_EXAMPLE_STM32F103C8 VERSION 0.1)
+include(FetchContent)
+add_executable(ecu_example_stm32f103 
+    ${CMAKE_CURRENT_LIST_DIR}/src/main.c
+    ${CMAKE_CURRENT_LIST_DIR}/src/led_fsm.c
+)
 
-# if(NOT CMAKE_C_COMPILER_ID IN_LIST ECU_SUPPORTED_COMPILERS)
-#     message(WARNING "Using untested compiler. See entries in ECU_SUPPORTED_COMPILERS "
-#                     "for a list of supported and tested compilers.")
-# endif()
 
-# # Note this library is meant to be compiled with the target 
-# # application's toolchain.
-# add_library(ecu STATIC
-#     # Library source code.
-#     ${CMAKE_CURRENT_LIST_DIR}/src/asserter.c
-#     ${CMAKE_CURRENT_LIST_DIR}/src/circular_dll.c
-#     ${CMAKE_CURRENT_LIST_DIR}/src/event.c
-#     ${CMAKE_CURRENT_LIST_DIR}/src/fsm.c
-#     # ${CMAKE_CURRENT_LIST_DIR}/src/hsm.c
-#     ${CMAKE_CURRENT_LIST_DIR}/src/object_id.c
-#     ${CMAKE_CURRENT_LIST_DIR}/src/timer.c
-#     ${CMAKE_CURRENT_LIST_DIR}/src/tree.c
+################################################################################################################################
+############################### Specify compiler and linker settings for this example project ##################################
+################################################################################################################################
+target_compile_options(ecu_example_stm32f103
+    PRIVATE
+        # Compiler flags specific to C
+        $<$<COMPILE_LANG_AND_ID:C,GNU>:-Wstrict-prototypes>
 
-#     # Interfaces.
-#     ${CMAKE_CURRENT_LIST_DIR}/src/interface/itimer.c
-# )
+        # Compiler flags specific to C++
 
-# # Example include in the Application would be #include <ecu/fsm.h> 
-# # in order to give larger apps some scope when including files.
-# target_include_directories(ecu
-#     PUBLIC 
-#         ${CMAKE_CURRENT_LIST_DIR}/inc 
-# )
+        # Compiler flags for both C and C++
+        $<$<OR:$<COMPILE_LANG_AND_ID:C,GNU>,$<COMPILE_LANG_AND_ID:CXX,GNU>>:-fdiagnostics-color=always -ffunction-sections -fdata-sections -fstack-usage -fno-common>
+        $<$<OR:$<COMPILE_LANG_AND_ID:C,GNU>,$<COMPILE_LANG_AND_ID:CXX,GNU>>:-Wall -Wextra -Wpedantic -Wconversion -Wfloat-equal -Wundef -Wshadow -Wstack-usage=500>
+        $<$<OR:$<COMPILE_LANG_AND_ID:C,GNU>,$<COMPILE_LANG_AND_ID:CXX,GNU>>:-Wcast-align -Wstrict-overflow=2 -Wwrite-strings -Waggregate-return>
+        $<$<OR:$<COMPILE_LANG_AND_ID:C,GNU>,$<COMPILE_LANG_AND_ID:CXX,GNU>>:-Wcast-qual -Wswitch-default -Wimplicit-fallthrough -Wnull-dereference -Wdouble-promotion -Os>
 
-# # Target Endianness.
-# if(CMAKE_C_BYTE_ORDER STREQUAL "LITTLE_ENDIAN")
-#     target_compile_definitions(ecu 
-#         PUBLIC 
-#             ECU_LITTLE_ENDIAN 
-#     )
-# elseif(CMAKE_C_BYTE_ORDER STREQUAL "BIG_ENDIAN")
-#     target_compile_definitions(ecu 
-#         PUBLIC 
-#             ECU_BIG_ENDIAN 
-#     )
-# else()
-#     message(WARNING "Unable to detect target endianness. endian.h cannot be used.")
-# endif()
+        # Compiler flags specific to Debug builds
+        $<$<CONFIG:Debug>:-g3>
+)
 
-# # Enable all warnings for our internal testing. Do not propogate
-# # these warnings or any other compiler flags to the Application.
-# # If CMAKE_BUILD_TYPE is "debug" then -g compiler flag will
-# # automatically be set which saves debug symbols.
+
+target_compile_features(ecu_example_stm32f103
+    PRIVATE 
+        cxx_std_20
+        c_std_23
+)
+
+
+target_compile_definitions(ecu_example_stm32f103
+    PRIVATE 
+        USE_HAL_DRIVER
+        STM32F103xB
+)
+
+
+target_include_directories(ecu_example_stm32f103
+    PRIVATE 
+        ${CMAKE_CURRENT_LIST_DIR}/include
+)
+
+
+################################################################################################################################
+################## Here is where we actually import ECU library, cross-compile it, and link against it. ########################
+################################################################################################################################
+FetchContent_Declare(
+    ecu
+    GIT_REPOSITORY https://github.com/ress059/ecu.git
+    GIT_TAG        f331593a09a0004aa1dea6eb1f009bf035ac1035 # Most recent commit. TODO Will update once ecu officially released.
+)
+FetchContent_MakeAvailable(ecu)
+
+
 # target_compile_options(ecu 
-#     PRIVATE
-#         $<$<C_COMPILER_ID:GNU,Clang>:-fdiagnostics-color=always>
-#         $<$<C_COMPILER_ID:GNU,Clang>:-Wall -Wextra -Wpedantic -Wconversion -Wfloat-equal -Wundef>
-#         $<$<C_COMPILER_ID:GNU,Clang>:-Wcast-align -Wstrict-prototypes -Wstrict-overflow=2 -Wwrite-strings -Waggregate-return>
-#         $<$<C_COMPILER_ID:GNU,Clang>:-Wcast-qual -Wswitch-default -Wimplicit-fallthrough -Wnull-dereference -Wdouble-promotion>
+#     PRIVATE 
+#       Specify any additional flags (i.e. optimization flags) you want here when cross-compiling ECU.
 # )
 
-# # Warn the user that run-time asserts are being disabled. It is
-# # not recommended to disable run-time asserts but we have this
-# # as an option to decrease overhead of the library.
-# if(ECU_DISABLE_RUNTIME_ASSERTS)
-#     message(WARNING "Option ECU_DISABLE_RUNTIME_ASSERTS set to ON. Runtime asserts "
-#                     "will not fire in this library. Are you sure you wish to disable asserts??")
 
-#     target_compile_definitions(ecu 
-#         PUBLIC 
-#             ECU_DISABLE_RUNTIME_ASSERTS 
-#     )
+target_link_libraries(ecu_example_stm32f103 
+    PRIVATE 
+        ecu 
+)
 
-#     # Some functions will now be unused because they are called within 
-#     # assert macros. Use -Wno to suppress these warnings.
-#     target_compile_options(ecu
-#         PRIVATE
-#             $<$<C_COMPILER_ID:GNU,Clang>:-Wno-unused-function>
-#     )
-# endif()
 
-# # CTest and enable_testing has to be in the root CMakeLists.txt. 
-# # Tests will not be discovered if this is in tests/CMakeLists.txt....
-# if(ECU_ENABLE_TESTING)
-#     include(CTest)
-#     enable_testing()
-#     add_subdirectory(tests)
-# endif()
+
+
+
+
+# TODO: 
+# 0) Obviously need startup code before anything else.
+# 1) Creating normal executable and not .elf.
+# 2) Need to create .map file.
+# 3) Getting these linker warnings
+# in function `_close_r': closer.c:(.text._close_r+0xc): warning: _close is not implemented and will always fail
+# in function `_lseek_r': lseekr.c:(.text._lseek_r+0x10): warning: _lseek is not implemented and will always fail
+# in function `_read_r': readr.c:(.text._read_r+0x10): warning: _read is not implemented and will always fail
+# in function `_write_r': writer.c:(.text._write_r+0x10): warning: _write is not implemented and will always fail
+# /opt/arm-gnu-toolchain-13.3.rel1-x86_64-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld: warning: cannot find entry symbol Reset_Handler; defaulting to 08000000
+# /opt/arm-gnu-toolchain-13.3.rel1-x86_64-arm-none-eabi/bin/../lib/gcc/arm-none-eabi/13.3.1/../../../../arm-none-eabi/bin/ld: warning: ecu_example_stm32f103 has a LOAD segment with RWX permissions
