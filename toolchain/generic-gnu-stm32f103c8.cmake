@@ -72,7 +72,18 @@ set(CMAKE_C_FLAGS_INIT "-mcpu=cortex-m3 -mfloat-abi=soft -mthumb" CACHE STRING "
 set(CMAKE_CXX_FLAGS_INIT "-fno-exceptions -fno-rtti -fno-use-cxa-atexit -mcpu=cortex-m3 -mfloat-abi=soft -mthumb" CACHE STRING "")
 
 
+# Specify any toolchain-specific source files that must be compiled by the target.
+set(TOOLCHAIN_SOURCE_FILES "${CMAKE_CURRENT_LIST_DIR}/stm32f103c8_startup.c" CACHE STRING "")
+
+
 # Only set hardware-specific linker flags for STM32F103 here since this is a toolchain
 # file. Remaining flags will be added by CMake build system depending on what is needed 
 # by the application.
 set(CMAKE_EXE_LINKER_FLAGS_INIT "-mcpu=cortex-m3 -mfloat-abi=soft -mthumb -specs=nosys.specs -Wl,-T${CMAKE_CURRENT_LIST_DIR}/stm32f103c8.ld -Wl,-Map=${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}.map -Wl,--gc-sections" CACHE STRING "")
+
+
+# These rule variables control how CMake actually calls the linker from the command line.
+# Edit these so it creates an .elf executable. All other flags remain the same as the default.
+# Verified linker invokation is exactly the same besides the .elf
+set(CMAKE_C_LINK_EXECUTABLE "<CMAKE_C_COMPILER> <FLAGS> <CMAKE_C_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET>.elf <LINK_LIBRARIES>" CACHE STRING "")
+set(CMAKE_CXX_LINK_EXECUTABLE "<CMAKE_CXX_COMPILER> <FLAGS> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET>.elf <LINK_LIBRARIES>" CACHE STRING "")

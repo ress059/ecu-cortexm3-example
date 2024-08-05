@@ -1,16 +1,19 @@
 cmake_minimum_required(VERSION 3.21)
-project(ECU_EXAMPLE_STM32F103C8 VERSION 0.1)
+project(ecu_example_stm32f103c8 VERSION 0.1)
 include(FetchContent)
-add_executable(ecu_example_stm32f103 
-    ${CMAKE_CURRENT_LIST_DIR}/src/main.c
-    ${CMAKE_CURRENT_LIST_DIR}/src/led_fsm.c
-)
 
 
 ################################################################################################################################
 ############################### Specify compiler and linker settings for this example project ##################################
 ################################################################################################################################
-target_compile_options(ecu_example_stm32f103
+add_executable(${CMAKE_PROJECT_NAME}
+    ${CMAKE_CURRENT_LIST_DIR}/src/main.c
+    ${CMAKE_CURRENT_LIST_DIR}/src/led_fsm.c
+    ${TOOLCHAIN_SOURCE_FILES}
+)
+
+
+target_compile_options(${CMAKE_PROJECT_NAME}
     PRIVATE
         # Compiler flags specific to C
         $<$<COMPILE_LANG_AND_ID:C,GNU>:-Wstrict-prototypes>
@@ -28,21 +31,21 @@ target_compile_options(ecu_example_stm32f103
 )
 
 
-target_compile_features(ecu_example_stm32f103
+target_compile_features(${CMAKE_PROJECT_NAME}
     PRIVATE 
         cxx_std_20
         c_std_23
 )
 
 
-target_compile_definitions(ecu_example_stm32f103
+target_compile_definitions(${CMAKE_PROJECT_NAME}
     PRIVATE 
         USE_HAL_DRIVER
         STM32F103xB
 )
 
 
-target_include_directories(ecu_example_stm32f103
+target_include_directories(${CMAKE_PROJECT_NAME}
     PRIVATE 
         ${CMAKE_CURRENT_LIST_DIR}/include
 )
@@ -65,7 +68,7 @@ FetchContent_MakeAvailable(ecu)
 # )
 
 
-target_link_libraries(ecu_example_stm32f103 
+target_link_libraries(${CMAKE_PROJECT_NAME} 
     PRIVATE 
         ecu 
 )

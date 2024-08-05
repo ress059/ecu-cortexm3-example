@@ -11,10 +11,7 @@
  *    exceptions. Since exceptions are removed if this toolchain file is used (-fno-exceptions
  *    passed to compiler) this is not needed.
  *
- * 3. Removed redundant padding in beginning of all sections since location counter is already
- *    aligned at the end of each section.
- *
- * 4. Remove heap since it is not used.
+ * 3. Set heap size to 0 since it is not used.
  *
  * Other notes:
  * 1. .ARM.extab and .ARM sections contain information for unwinding the stack if any 
@@ -27,42 +24,40 @@
  */
 
 
-ENTRY(reset_handler)
+/* Sizes must be aligned on 8-byte boundary */
+stack_size_ = 1000;
+heap_size_ = 0;
 
-/* Highest address of the user mode stack */
-/* TODO MAY DELETE THIS */
-_estack = ORIGIN(RAM) + LENGTH(RAM); /* end of "RAM" Ram type memory */
-_Min_Heap_Size = 0x200 ; /* required amount of heap */
-_Min_Stack_Size = 0x400 ; /* required amount of stack */
-
-end of stack = RAM end
+ENTRY(reset_isr_handler)
 
 MEMORY
 {
     FLASH (rx) : ORIGIN = 0x08000000, LENGTH = 64K
-    SRAM (xrw) : ORIGIN = 0x20000000, LENGTH = 20K
+    SRAM (rwx) : ORIGIN = 0x20000000, LENGTH = 20K
 }
-
 
 SECTIONS
 {
     .isr_vector :
     {
+        . = ALIGN(4);
         KEEP(*(.isr_vector))
         . = ALIGN(4);
     } >FLASH
 
     .text :
     {
+        . = ALIGN(4);
         *(.text)
         *(.text*)
         KEEP(*(.init))
         KEEP(*(.fini))
         . = ALIGN(4);
     } >FLASH
-    
+
     .rodata :
     {
+        . = ALIGN(4);
         *(.rodata)
         *(.rodata*)
         . = ALIGN(4);
@@ -70,12 +65,14 @@ SECTIONS
     
     .ARM.extab : 
     {
+        . = ALIGN(4);
         *(.ARM.extab* .gnu.linkonce.armextab.*)
         . = ALIGN(4);
     } >FLASH
     
     .ARM : 
     {
+        . = ALIGN(4);
         __exidx_start = .;
         *(.ARM.exidx*)
         __exidx_end = .;
@@ -84,6 +81,7 @@ SECTIONS
     
     .preinit_array :
     {
+        . = ALIGN(4);
         __preinit_array_start = .;
         KEEP(*(.preinit_array*))
         __preinit_array_end = .;
@@ -92,6 +90,7 @@ SECTIONS
     
     .init_array :
     {
+        . = ALIGN(4);
         __init_array_start = .;
         KEEP(*(SORT(.init_array.*)))
         KEEP (*(.init_array*))
@@ -101,6 +100,7 @@ SECTIONS
     
     .fini_array :
     {
+        . = ALIGN(4);
         __fini_array_start = .;
         KEEP(*(SORT(.fini_array.*)))
         KEEP(*(.fini_array*))
@@ -114,6 +114,7 @@ SECTIONS
     data_start_flash_ = LOADADDR(.data);
     .data :
     {
+        . = ALIGN(4);
         data_start_ram_ = .;
         *(.data)
         *(.data*)
@@ -125,9 +126,10 @@ SECTIONS
     
     /* .bss stores uninitialized global and static variables. Symbols declared here 
     indicate the start and end of .bss so we can 0 it out on startup. */
+    . = ALIGN(4);
     .bss :
     {
-        bss_start_= .;
+        bss_start_ = .;
         *(.bss)
         *(.bss*)
         *(COMMON)
@@ -135,24 +137,29 @@ SECTIONS
         bss_end_ = .;
     } >SRAM
 
-  /* User_heap_stack section, used to check that there is enough "RAM" Ram  type memory left */
-  ._user_heap_stack :
-  {
-    . = ALIGN(8);
-    PROVIDE ( end = . );
-    PROVIDE ( _end = . );
-    . = . + _Min_Heap_Size;
-    . = . + _Min_Stack_Size;
-    . = ALIGN(8);
-  } >RAM
+    /* Used so linker script throws error if there is not enough RAM left to satisfy 
+    user's stack and heap size requirements. */
+    ._user_heap_stack :
+    {
+        . = ALIGN(8);
+        . = . + heap_size_;
+        . = . + stack_size_;
+        . = ALIGN(8);
+    } >SRAM
 
-  /* Remove information from the compiler libraries */
-  /DISCARD/ :
-  {
-    libc.a ( * )
-    libm.a ( * )
-    libgcc.a ( * )
-  }
+    /* Remove information from the compiler libraries */
+    /DISCARD/ :
+    {
+        libc.a ( * )
+        libm.a ( * )
+        libgcc.a ( * )
+    }
 
-  .ARM.attributes 0 : { *(.ARM.attributes) }
+    .ARM.attributes 0 : 
+    { 
+        *(.ARM.attributes) 
+    }
 }
+
+/* Stack grows from top-down on ARM Cortex M3 */
+stack_start_ = ORIGIN(RAM) + LENGTH(RAM);
