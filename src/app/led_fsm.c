@@ -40,6 +40,7 @@ ECU_STATIC_ASSERT( (offsetof(struct led_fsm, base_fsm) == 0) );
 ECU_STATIC_ASSERT( (offsetof(struct led_fsm_event, base_event) == 0) );
 
 
+
 /*-------------------------------------------------------------------------------------*/
 /*------------------------- STATIC FUNCTION DECLARATIONS - CHECKS ---------------------*/
 /*-------------------------------------------------------------------------------------*/
@@ -53,7 +54,6 @@ static bool is_constructed(struct led_fsm *me);
 /*-------------------------------------------------------------------------------------*/
 
 static enum ecu_fsm_status off_state_on_entry(struct led_fsm *me);
-static void off_state_on_exit(struct led_fsm *me);
 static enum ecu_fsm_status off_state_handler(struct led_fsm *me, 
                                              const struct led_fsm_event *evt);
 
@@ -64,7 +64,6 @@ static enum ecu_fsm_status off_state_handler(struct led_fsm *me,
 /*-------------------------------------------------------------------------------------*/
 
 static enum ecu_fsm_status on_state_on_entry(struct led_fsm *me);
-static void on_state_on_exit(struct led_fsm *me);
 static enum ecu_fsm_status on_state_handler(struct led_fsm *me, 
                                             const struct led_fsm_event *evt);
 
@@ -75,7 +74,6 @@ static enum ecu_fsm_status on_state_handler(struct led_fsm *me,
 /*-------------------------------------------------------------------------------------*/
 
 static enum ecu_fsm_status held_down_state_on_entry(struct led_fsm *me);
-static void held_down_state_on_exit(struct led_fsm *me);
 static enum ecu_fsm_status held_down_state_handler(struct led_fsm *me, 
                                                    const struct led_fsm_event *evt);
 
@@ -89,7 +87,7 @@ static const struct ecu_fsm_state off_state =
 {
     .handler    = (ecu_fsm_state_handler)&off_state_handler,
     .on_entry   = (ecu_fsm_on_entry_handler)&off_state_on_entry,
-    .on_exit    = (ecu_fsm_on_exit_handler)&off_state_on_exit
+    .on_exit    = (ecu_fsm_on_exit_handler)0
 };
 
 
@@ -97,7 +95,7 @@ static const struct ecu_fsm_state on_state =
 {
     .handler    = (ecu_fsm_state_handler)&on_state_handler,
     .on_entry   = (ecu_fsm_on_entry_handler)&on_state_on_entry,
-    .on_exit    = (ecu_fsm_on_exit_handler)&on_state_on_exit
+    .on_exit    = (ecu_fsm_on_exit_handler)0
 };
 
 
@@ -105,7 +103,7 @@ static const struct ecu_fsm_state held_down_state =
 {
     .handler    = (ecu_fsm_state_handler)&held_down_state_handler,
     .on_entry   = (ecu_fsm_on_entry_handler)&held_down_state_on_entry,
-    .on_exit    = (ecu_fsm_on_exit_handler)&held_down_state_on_exit
+    .on_exit    = (ecu_fsm_on_exit_handler)0
 };
 
 
@@ -119,11 +117,10 @@ static bool is_constructed(struct led_fsm *me)
     bool status = false;
     ECU_RUNTIME_ASSERT( (me), BSP_ASSERT_FUNCTOR );
 
+    /* api_obj is optional. */
     if ((me->hold_time_ms > 0) && \
         (me->toggle_time_ms > 0) && \
-        (me->api.i_led_toggle) && \
-        (me->api.i_led_on) && \
-        (me->api.i_led_off) && \
+        (me->api.i_led_set) && \
         (me->api.i_timer_arm) && \
         (me->api.i_timer_disarm))
     {
@@ -143,20 +140,10 @@ static enum ecu_fsm_status off_state_on_entry(struct led_fsm *me)
 {
     ECU_RUNTIME_ASSERT( (me), BSP_ASSERT_FUNCTOR );
     ECU_RUNTIME_ASSERT( (is_constructed(me)), BSP_ASSERT_FUNCTOR );
-    (*me->api.i_led_off)();
-    (*me->api.i_timer_disarm)(me);
-}
 
-
-static void off_state_on_exit(struct led_fsm *me)
-{
-    ECU_RUNTIME_ASSERT( (me), BSP_ASSERT_FUNCTOR );
-    ECU_RUNTIME_ASSERT( (is_constructed(me)), BSP_ASSERT_FUNCTOR );
-
-    /* Suppress unused parameter warning if asserts disabled. */
-#if defined ECU_DISABLE_RUNTIME_ASSERTS
-    (void)me;
-#endif
+    me->led_state = LED_FSM_LED_STATE_OFF;
+    (*me->api.i_led_set)(me->api.i_obj, LED_FSM_LED_STATE_OFF);
+    (*me->api.i_timer_disarm)(me->api.i_obj);
 }
 
 
@@ -195,20 +182,10 @@ static enum ecu_fsm_status on_state_on_entry(struct led_fsm *me)
 {
     ECU_RUNTIME_ASSERT( (me), BSP_ASSERT_FUNCTOR );
     ECU_RUNTIME_ASSERT( (is_constructed(me)), BSP_ASSERT_FUNCTOR );
-    (*me->api.i_led_on)();
-    (*me->api.i_timer_arm)(me, me->hold_time_ms);
-}
 
-
-static void on_state_on_exit(struct led_fsm *me)
-{
-    ECU_RUNTIME_ASSERT( (me), BSP_ASSERT_FUNCTOR );
-    ECU_RUNTIME_ASSERT( (is_constructed(me)), BSP_ASSERT_FUNCTOR );
-
-    /* Suppress unused parameter warning if asserts disabled. */
-#if defined ECU_DISABLE_RUNTIME_ASSERTS
-    (void)me;
-#endif
+    me->led_state = LED_FSM_LED_STATE_ON;
+    (*me->api.i_led_set)(me->api.i_obj, LED_FSM_LED_STATE_ON);
+    (*me->api.i_timer_arm)(me->api.i_obj, me->hold_time_ms);
 }
 
 
@@ -253,19 +230,7 @@ static enum ecu_fsm_status held_down_state_on_entry(struct led_fsm *me)
 {
     ECU_RUNTIME_ASSERT( (me), BSP_ASSERT_FUNCTOR );
     ECU_RUNTIME_ASSERT( (is_constructed(me)), BSP_ASSERT_FUNCTOR );
-    (*me->api.i_timer_arm)(me, me->toggle_time_ms);
-}
-
-
-static void held_down_state_on_exit(struct led_fsm *me)
-{
-    ECU_RUNTIME_ASSERT( (me), BSP_ASSERT_FUNCTOR );
-    ECU_RUNTIME_ASSERT( (is_constructed(me)), BSP_ASSERT_FUNCTOR );
-
-    /* Suppress unused parameter warning if asserts disabled. */
-#if defined ECU_DISABLE_RUNTIME_ASSERTS
-    (void)me;
-#endif
+    (*me->api.i_timer_arm)(me->api.i_obj, me->toggle_time_ms);
 }
 
 
@@ -286,8 +251,19 @@ static enum ecu_fsm_status held_down_state_handler(struct led_fsm *me,
 
         case LED_FSM_TIMEOUT_EVT:
         {
-            (*me->api.i_led_toggle)();
-            (*me->api.i_timer_arm)(me, me->toggle_time_ms);
+            /* Toggle the LED and rearm the toggle timer. */
+            if (me->led_state == LED_FSM_LED_STATE_ON)
+            {
+                me->led_state = LED_FSM_LED_STATE_OFF;
+                (*me->api.i_led_set)(me->api.i_obj, LED_FSM_LED_STATE_OFF);
+            }
+            else
+            {
+                me->led_state = LED_FSM_LED_STATE_ON;
+                (*me->api.i_led_set)(me->api.i_obj, LED_FSM_LED_STATE_ON);
+            }
+
+            (*me->api.i_timer_arm)(me->api.i_obj, me->toggle_time_ms);
             break;
         }
 
@@ -310,22 +286,21 @@ static enum ecu_fsm_status held_down_state_handler(struct led_fsm *me,
 void led_fsm_ctor(struct led_fsm *me,
                   uint32_t hold_time_ms_0,
                   uint32_t toggle_time_ms_0,
-                  void(*i_led_toggle_0)(void),
-                  void(*i_led_on_0)(void),
-                  void(*i_led_off_0)(void),
-                  void (*i_timer_arm_0)(struct led_fsm *me, uint32_t ms),
-                  void (*i_timer_disarm_0)(struct led_fsm *me))
+                  void *i_obj_0,
+                  void (*i_led_set_0)(void *i_obj, enum led_fsm_led_state state),
+                  void (*i_timer_arm_0)(void *i_obj, uint32_t ms),
+                  void (*i_timer_disarm_0)(void *i_obj))
 {
+    /* i_obj_0 is optional. */
     ECU_RUNTIME_ASSERT( ((hold_time_ms_0 > 0) && (toggle_time_ms_0 > 0)), BSP_ASSERT_FUNCTOR );
-    ECU_RUNTIME_ASSERT( (me && i_led_toggle_0 && i_led_on_0 && i_led_off_0 && i_timer_arm_0 && i_timer_disarm_0),
-                        BSP_ASSERT_FUNCTOR );
+    ECU_RUNTIME_ASSERT( (me && i_led_set_0 && i_timer_arm_0 && i_timer_disarm_0), BSP_ASSERT_FUNCTOR );
 
     ecu_fsm_ctor((struct ecu_fsm *)me, &off_state);
     me->hold_time_ms        = hold_time_ms_0;
     me->toggle_time_ms      = toggle_time_ms_0;
-    me->api.i_led_toggle    = i_led_toggle_0;
-    me->api.i_led_on        = i_led_on_0;
-    me->api.i_led_off       = i_led_off_0;
+    me->led_state           = LED_FSM_LED_STATE_OFF;
+    me->api.i_obj           = i_obj_0;
+    me->api.i_led_set       = i_led_set_0;
     me->api.i_timer_arm     = i_timer_arm_0;
     me->api.i_timer_disarm  = i_timer_disarm_0;
 }

@@ -13,4 +13,5 @@ TODO: show pic of setup and explain project. Any number of switches/leds. When y
 
 # Project Architecture
 TODO: Show layers - App, BSP, Drivers, MCU layers.
+https://embeddedartistry.com/blog/2019/08/05/practical-decoupling-techniques-applied-to-a-c-based-radio-driver/
 
