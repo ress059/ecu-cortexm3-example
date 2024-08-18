@@ -9,9 +9,9 @@
 		{
             "name": "debug-build-configuration",
             "displayName": "Debug-Build-Configuration",
-            "description": "Debug build for STM32F103. Uses ARM GNU toolchain.",
+            "description": "Debug build for STM32L432. Uses ARM GNU toolchain.",
             "binaryDir": "${sourceDir}/build/debug",
-            "toolchainFile": "${sourceDir}/toolchain/generic-gnu-stm32f103c8.cmake",
+            "toolchainFile": "${sourceDir}/toolchain/generic-gnu-stm32l432.cmake",
             "cacheVariables": 
             {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": true,
@@ -21,9 +21,9 @@
         {
             "name": "release-build-configuration",
             "displayName": "Release-Build-Configuration",
-            "description": "Release build for STM32F103. Uses ARM GNU toolchain.",
+            "description": "Release build for STM32L432. Uses ARM GNU toolchain.",
             "binaryDir": "${sourceDir}/build/release",
-            "toolchainFile": "${sourceDir}/toolchain/generic-gnu-stm32f103c8.cmake",
+            "toolchainFile": "${sourceDir}/toolchain/generic-gnu-stm32l432.cmake",
             "cacheVariables": 
             {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": true,
@@ -35,14 +35,14 @@
 		{
 			"name": "debug-build",
 			"displayName": "Debug-Build",
-			"description": "Debug build for STM32F103. Uses ARM GNU toolchain.",
+			"description": "Debug build for STM32L432. Uses ARM GNU toolchain.",
 			"configurePreset": "debug-build-configuration",
 			"verbose": true
 		},
 		{
 			"name": "release-build",
 			"displayName": "Release-Build",
-			"description": "Release build for STM32F103. Uses ARM GNU toolchain.",
+			"description": "Release build for STM32L432. Uses ARM GNU toolchain.",
 			"configurePreset": "release-build-configuration",
 			"verbose": true
 		}
